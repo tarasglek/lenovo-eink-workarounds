@@ -2,48 +2,55 @@ import pyautogui
 import time
 import sys # Import sys to exit if images are not found
 
-# --- Find and right-click lenovo.logo.png ---
+def find_and_interact(image_path, action_type='click', confidence=0.8):
+    """Finds an image on screen, performs an action, and handles not found errors."""
+    try:
+        location = pyautogui.locateCenterOnScreen(image_path, confidence=confidence)
+        if location is None:
+            # Raise the specific exception type pyautogui uses internally
+            raise pyautogui.ImageNotFoundException(f"{image_path} not found on the screen.")
+
+        print(f"Found {image_path} at: {location}")
+
+        if action_type == 'click':
+            pyautogui.click(location)
+            print(f"Clicked on {image_path}")
+        elif action_type == 'right_click':
+            pyautogui.rightClick(location)
+            print(f"Right-clicked on {image_path}")
+        else:
+            # Optional: Handle unknown action types if needed, or just ignore
+            print(f"Action '{action_type}' performed on {image_path} at {location}")
+            # If you need specific actions beyond click/right_click, add them here.
+            # For now, we assume pyautogui handles other action strings if they exist,
+            # or you might want to raise an error for unsupported actions.
+
+        return location # Return location in case it's needed later
+
+    except pyautogui.ImageNotFoundException:
+        # Re-raise the exception to be caught by the main try-except block
+        raise
+
+# --- Main script execution ---
 try:
-    # Locate the center of the lenovo logo image on the screen.
-    # Confidence is added to handle slight variations; adjust if needed.
-    lenovo_logo_location = pyautogui.locateCenterOnScreen('lenovo.logo.png', confidence=0.8)
+    # Find and right-click the logo
+    find_and_interact('lenovo.logo.png', action_type='right_click', confidence=0.8)
 
-    if lenovo_logo_location is None:
-        raise pyautogui.ImageNotFoundException("lenovo.logo.png not found on the screen.")
+    # Wait
+    print("Waiting for 1 second...")
+    time.sleep(1)
 
-    print(f"Found lenovo.logo.png at: {lenovo_logo_location}")
-    # Move the mouse to the location and right-click
-    pyautogui.rightClick(lenovo_logo_location)
-    print("Right-clicked on lenovo.logo.png")
+    # Find and click the rotate button
+    find_and_interact('rotate.png', action_type='click', confidence=0.8)
+
+    print("Script completed successfully.")
 
 except pyautogui.ImageNotFoundException as e:
-    print("Error: Image not found during script execution.")
-    print(f"Details: {e}") # Print the original exception message separately
-    print(f"Image searched for: lenovo.logo.png")
-    sys.exit(1) # Exit the script if the first image isn't found
-
-# --- Wait for 1 second ---
-print("Waiting for 1 second...")
-time.sleep(1)
-
-# --- Find and click rotate.png ---
-try:
-    # Locate the center of the rotate image on the screen.
-    # Confidence is added to handle slight variations; adjust if needed.
-    rotate_button_location = pyautogui.locateCenterOnScreen('rotate.png', confidence=0.8)
-
-    if rotate_button_location is None:
-        raise pyautogui.ImageNotFoundException("rotate.png not found on the screen after right-click.")
-
-    print(f"Found rotate.png at: {rotate_button_location}")
-    # Move the mouse to the location and click
-    pyautogui.click(rotate_button_location)
-    print("Clicked on rotate.png")
-
-except pyautogui.ImageNotFoundException as e:
-    print("Error: Image not found during script execution.")
-    print(f"Details: {e}") # Print the original exception message separately
-    print(f"Image searched for: rotate.png")
-    sys.exit(1) # Exit the script if the second image isn't found
-
-print("Script completed successfully.")
+    # Centralized error handling for image not found
+    print(f"\nError: Script terminated. Could not find required image.")
+    print(f"Details: {e}")
+    sys.exit(1)
+except Exception as e:
+    # Catch any other unexpected errors during execution
+    print(f"\nAn unexpected error occurred: {e}")
+    sys.exit(1)
