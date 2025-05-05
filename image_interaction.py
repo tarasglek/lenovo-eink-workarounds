@@ -17,7 +17,9 @@ try:
     print("Right-clicked on lenovo.logo.png")
 
 except pyautogui.ImageNotFoundException as e:
-    print(f"Error: {e}")
+    print("Error: Image not found during script execution.")
+    print(f"Details: {e}") # Print the original exception message separately
+    print(f"Image searched for: lenovo.logo.png")
     sys.exit(1) # Exit the script if the first image isn't found
 
 # --- Wait for 1 second ---
@@ -39,7 +41,9 @@ try:
     print("Clicked on rotate.png")
 
 except pyautogui.ImageNotFoundException as e:
-    print(f"Error: {e}")
+    print("Error: Image not found during script execution.")
+    print(f"Details: {e}") # Print the original exception message separately
+    print(f"Image searched for: rotate.png")
     sys.exit(1) # Exit the script if the second image isn't found
 
 print("Script completed successfully.")
