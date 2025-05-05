@@ -4,32 +4,27 @@ import sys # Import sys to exit if images are not found
 
 def find_and_interact(image_path, action_type='click', confidence=0.8):
     """Finds an image on screen, performs an action, and handles not found errors."""
-    try:
-        location = pyautogui.locateCenterOnScreen(image_path, confidence=confidence)
-        if location is None:
-            # Raise the specific exception type pyautogui uses internally
-            raise pyautogui.ImageNotFoundException(f"{image_path} not found on the screen.")
+    location = pyautogui.locateCenterOnScreen(image_path, confidence=confidence)
+    if location is None:
+        # Raise the specific exception type pyautogui uses internally
+        raise pyautogui.ImageNotFoundException(f"{image_path} not found on the screen.")
 
-        print(f"Found {image_path} at: {location}")
+    print(f"Found {image_path} at: {location}")
 
-        if action_type == 'click':
-            pyautogui.click(location)
-            print(f"Clicked on {image_path}")
-        elif action_type == 'right_click':
-            pyautogui.rightClick(location)
-            print(f"Right-clicked on {image_path}")
-        else:
-            # Optional: Handle unknown action types if needed, or just ignore
-            print(f"Action '{action_type}' performed on {image_path} at {location}")
-            # If you need specific actions beyond click/right_click, add them here.
-            # For now, we assume pyautogui handles other action strings if they exist,
-            # or you might want to raise an error for unsupported actions.
+    if action_type == 'click':
+        pyautogui.click(location)
+        print(f"Clicked on {image_path}")
+    elif action_type == 'right_click':
+        pyautogui.rightClick(location)
+        print(f"Right-clicked on {image_path}")
+    else:
+        # Optional: Handle unknown action types if needed, or just ignore
+        print(f"Action '{action_type}' performed on {image_path} at {location}")
+        # If you need specific actions beyond click/right_click, add them here.
+        # For now, we assume pyautogui handles other action strings if they exist,
+        # or you might want to raise an error for unsupported actions.
 
-        return location # Return location in case it's needed later
-
-    except pyautogui.ImageNotFoundException:
-        # Re-raise the exception to be caught by the main try-except block
-        raise
+    return location # Return location in case it's needed later
 
 # --- Main script execution ---
 try:
