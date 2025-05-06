@@ -3,6 +3,7 @@ import time
 import sys # Import sys to exit if images are not found
 import datetime # To timestamp the debug screenshot
 import logging # Import the logging module
+import traceback # For printing error details without recursion
 
 # --- Add these imports for screen rotation ---
 try:
@@ -32,8 +33,9 @@ def get_screen_rotation_str():
         # Using short forms for brevity in logs
         return orientation_map.get(orientation_val, f"Unk({orientation_val})")
     except Exception as e:
-        # Log the specific error encountered
-        logging.error(f"Error fetching screen rotation: {e}", exc_info=True) 
+        # Print error directly to stderr to avoid logging recursion
+        print(f"ERROR [get_screen_rotation_str]: Error fetching screen rotation: {e}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr) # Print traceback to stderr
         return "RotErr" # Rotation Error during fetch
 
 # Custom filter to add screen rotation to log records
