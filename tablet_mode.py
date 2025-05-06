@@ -72,14 +72,14 @@ def find_and_interact(image_path, action_type='click'):
 # --- Main script execution ---
 find_and_interact('switch-to-tablet.png', action_type='click')
 
-    # Find and right-click the logo
-    find_and_interact('lenovo.logo.png', action_type='right_click')
+# Find and right-click the logo
+find_and_interact('lenovo.logo.png', action_type='right_click')
 
-    # Wait
-    print("Waiting for 1 second...")
-    time.sleep(1)
+# Wait
+print("Waiting for 1 second...")
+time.sleep(1)
 
-    # Find and click the rotate button
-    find_and_interact('rotate.png', action_type='click')
+# Find and click the rotate button
+find_and_interact('rotate.png', action_type='click')
 
-    print("Script completed successfully.")
+print("Script completed successfully.")
