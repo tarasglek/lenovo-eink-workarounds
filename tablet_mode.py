@@ -65,12 +65,7 @@ def find_and_interact(image_path, action_type='click', max_retries=3):
                 # The line below won't be reached as the helper function exits
                 return None # Indicate failure if helper didn't exit
 
-            # Print retry message
-            if max_retries == float('inf'):
-                print(f"Polling {attempt}: {image_path} not found on screen. Retrying indefinitely...")
-            else:
-                print(f"Attempt {attempt}/{max_retries}: {image_path} not found.")
-                print(f"Waiting for {RETRY_DELAY_SECONDS} second(s) before retrying...")
+            print(f"Attempt {attempt}{f'/{max_retries}' if max_retries != float('inf') else ''}: {image_path} not found. Retrying {f'indefinitely ' if max_retries == float('inf') else ''}(delay: {RETRY_DELAY_SECONDS}s).")
 
             time.sleep(RETRY_DELAY_SECONDS)
 
