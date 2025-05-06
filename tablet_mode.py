@@ -30,7 +30,7 @@ def save_debug_screenshot_and_exit(failed_image_path):
 
     sys.exit(1)
 
-def find_and_interact(image_path, action_type='click', max_retries=3):
+def find_and_interact(image_path, action_type='click', max_retries=3, wait_to_disappear=False):
     """
     Finds an image on screen, performs an action, retries if not found,
     and handles errors including saving a debug screenshot and exiting on failure.
@@ -40,12 +40,15 @@ def find_and_interact(image_path, action_type='click', max_retries=3):
     # MAX_RETRIES is now a parameter
     RETRY_DELAY_SECONDS = 1
 
+    initial_location = None
     attempt = 0
     while True: # Loop potentially indefinitely
         try:
             location = pyautogui.locateCenterOnScreen(image_path, confidence=CONFIDENCE_LEVEL)
             if location:
                 logging.info(f"Found {image_path} at: {location}")
+
+                initial_location = location # Store the first location
 
                 if action_type == 'click':
                     pyautogui.click(location)
@@ -55,9 +58,42 @@ def find_and_interact(image_path, action_type='click', max_retries=3):
                     logging.info(f"Right-clicked on {image_path}")
                 else:
                     logging.info(f"Action '{action_type}' ignored on {image_path} at {location}")
-                    # Add other specific actions if needed
+                    if wait_to_disappear:
+                        logging.warning(f"wait_to_disappear=True but action_type is '{action_type}'. Disappearance check will be skipped as no action was performed to make it disappear.")
+                    return location # Success (image found, no action), return location and exit function
 
-                return location # Success, return location and exit function
+                # --- Start wait_to_disappear logic ---
+                if action_type in ['click', 'right_click'] and wait_to_disappear:
+                    logging.info(f"Waiting for {image_path} to disappear (max_retries for disappearance: {max_retries})...")
+                    disappear_attempt = 0
+                    while True: 
+                        if max_retries != float('inf') and disappear_attempt >= max_retries:
+                            logging.error(f"Image {image_path} did not disappear after {disappear_attempt} action re-attempts. Max retries for disappearance reached.")
+                            save_debug_screenshot_and_exit(f"{image_path} (failed to disappear after action)")
+                            return initial_location # Or None, script exits anyway
+
+                        time.sleep(RETRY_DELAY_SECONDS) # Wait before checking, to give action time to have effect
+                        
+                        current_location_check = pyautogui.locateCenterOnScreen(image_path, confidence=CONFIDENCE_LEVEL)
+
+                        if current_location_check is None:
+                            logging.info(f"{image_path} has disappeared as expected after {disappear_attempt + 1} action(s).")
+                            break # Exit disappearance loop, success
+                        else:
+                            disappear_attempt += 1
+                            logging.info(f"Disappearance check attempt {disappear_attempt}{f'/{max_retries}' if max_retries != float('inf') else ''}: {image_path} still visible at {current_location_check}. Re-attempting action '{action_type}'.")
+                            
+                            # Re-perform the action on the (potentially new) location
+                            if action_type == 'click':
+                                pyautogui.click(current_location_check)
+                                logging.info(f"Clicked again on {image_path} at {current_location_check}")
+                            elif action_type == 'right_click':
+                                pyautogui.rightClick(current_location_check)
+                                logging.info(f"Right-clicked again on {image_path} at {current_location_check}")
+                    # End of disappearance loop
+                # --- End wait_to_disappear logic ---
+                
+                return initial_location # Success, return initial_location and exit function
 
             else:
                  # locateCenterOnScreen raises ImageNotFoundException if None,
@@ -102,6 +138,6 @@ find_and_interact('rotate.png', action_type='click')
 
 time.sleep(3)  # Wait for the rotation to complete
 
-find_and_interact('windows-logo.png', action_type='click')
+find_and_interact('windows-logo.png', action_type='click', wait_to_disappear=True)
 
 logging.info("Script completed successfully.")
