@@ -31,7 +31,9 @@ def get_screen_rotation_str():
         }
         # Using short forms for brevity in logs
         return orientation_map.get(orientation_val, f"Unk({orientation_val})")
-    except Exception:
+    except Exception as e:
+        # Log the specific error encountered
+        logging.error(f"Error fetching screen rotation: {e}", exc_info=True) 
         return "RotErr" # Rotation Error during fetch
 
 # Custom filter to add screen rotation to log records
