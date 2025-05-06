@@ -22,7 +22,7 @@ def get_screen_rotation_str():
     try:
         # Get settings for the primary display
         settings = win32api.EnumDisplaySettings(None, win32con.ENUM_CURRENT_SETTINGS)
-        orientation_val = settings.dmDisplayOrientation
+        orientation_val = settings.DisplayOrientation
 
         orientation_map = {
             win32con.DMDO_DEFAULT: "0°",    # Landscape
