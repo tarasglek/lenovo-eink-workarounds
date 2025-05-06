@@ -1,3 +1,22 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "mouseinfo==0.1.3",
+#     "numpy==2.2.5",
+#     "opencv-python==4.11.0.86",
+#     "pillow==11.2.1",
+#     "pyautogui==0.9.54",
+#     "pygetwindow==0.0.9",
+#     "pymsgbox==1.0.9",
+#     "pyperclip==1.9.0",
+#     "pyrect==0.2.0",
+#     "pyscreeze==1.0.1",
+#     "pytweening==1.2.0",
+#     "pywin32==310",
+# ]
+# ///
+# add packages with uv add --script tablet_mode.py <package_name>==<version>
+# uv run tablet_mode.py
 import pyautogui
 import time
 import sys # Import sys to exit if images are not found
