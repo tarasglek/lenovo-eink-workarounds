@@ -116,24 +116,25 @@ def find_and_interact(image_path, action_type='click', max_retries=3, wait_to_di
 
                 # --- Start wait_to_disappear logic ---
                 if wait_to_disappear:
-                    logging.info(f"Waiting for {image_path} to disappear (max_retries for disappearance: {max_retries})...")
-                    disappear_attempt = 0
-                    while True: 
-                        if max_retries != float('inf') and disappear_attempt >= max_retries:
-                            logging.error(f"Image {image_path} did not disappear after {disappear_attempt} action re-attempts. Max retries for disappearance reached.")
-                            save_debug_screenshot_and_exit(f"{image_path} (failed to disappear after action)")
-                            return initial_location # Or None, script exits anyway
+                    logging.info(f"Waiting for {image_path} to disappear (action will be retried up to {max_retries} times if it doesn't)...")
+                    disappear_retry_count = 0 # Number of times the action has been retried
+                    
+                    while True:
+                        time.sleep(RETRY_DELAY_SECONDS) # Wait before checking visibility / after an action
 
-                        time.sleep(RETRY_DELAY_SECONDS) # Wait before checking, to give action time to have effect
-                        
-                        current_location_check = pyautogui.locateCenterOnScreen(image_path, confidence=CONFIDENCE_LEVEL)
+                        try:
+                            # Attempt to find the image. If it's gone, pyautogui.locateCenterOnScreen will raise ImageNotFoundException.
+                            current_location_check = pyautogui.locateCenterOnScreen(image_path, confidence=CONFIDENCE_LEVEL)
+                            
+                            # If we are here, the image is STILL VISIBLE.
+                            # Check if we have exhausted retries for re-performing the action.
+                            if max_retries != float('inf') and disappear_retry_count >= max_retries:
+                                logging.error(f"Image {image_path} did not disappear after {disappear_retry_count} re-attempts of action '{action_type}'. Max retries reached.")
+                                save_debug_screenshot_and_exit(f"{image_path} (failed to disappear after {disappear_retry_count} re-attempts of action)")
+                                return initial_location # Should not be reached due to exit
 
-                        if current_location_check is None:
-                            logging.info(f"{image_path} has disappeared as expected after {disappear_attempt + 1} action(s).")
-                            break # Exit disappearance loop, success
-                        else:
-                            disappear_attempt += 1
-                            logging.info(f"Disappearance check attempt {disappear_attempt}{f'/{max_retries}' if max_retries != float('inf') else ''}: {image_path} still visible at {current_location_check}. Re-attempting action '{action_type}'.")
+                            # Image is still visible, and we have retries left (or infinite retries).
+                            logging.info(f"Disappearance check: {image_path} still visible at {current_location_check}. Re-attempting action '{action_type}' (re-attempt {disappear_retry_count + 1}{f'/{max_retries}' if max_retries != float('inf') else '/inf'}).")
                             
                             # Re-perform the action on the (potentially new) location
                             if action_type == 'click':
@@ -142,7 +143,16 @@ def find_and_interact(image_path, action_type='click', max_retries=3, wait_to_di
                             elif action_type == 'right_click':
                                 pyautogui.rightClick(current_location_check)
                                 logging.info(f"Right-clicked again on {image_path} at {current_location_check}")
-                    # End of disappearance loop
+                            # Add other action types here if they are supported by wait_to_disappear
+
+                            disappear_retry_count += 1 # Increment the count of re-attempts
+
+                        except pyautogui.ImageNotFoundException:
+                            # SUCCESS: ImageNotFoundException means the image is no longer found.
+                            total_actions_performed = disappear_retry_count + 1 # Initial action + number of retries
+                            logging.info(f"{image_path} has disappeared as expected. Total actions performed: {total_actions_performed}.")
+                            break # Exit disappearance loop, success
+                    # End of disappearance while-loop
                 # --- End wait_to_disappear logic ---
                 
                 return initial_location # Success, return initial_location and exit function
