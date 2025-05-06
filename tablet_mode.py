@@ -3,63 +3,9 @@ import time
 import sys # Import sys to exit if images are not found
 import datetime # To timestamp the debug screenshot
 
-def find_and_interact(image_path, action_type='click', confidence=0.8):
-    """Finds an image on screen, performs an action, and handles not found errors."""
-    location = pyautogui.locateCenterOnScreen(image_path, confidence=confidence)
-    if location is None:
-        # Raise the specific exception type pyautogui uses internally
-        raise pyautogui.ImageNotFoundException(f"{image_path} not found on the screen.")
-
-    print(f"Found {image_path} at: {location}")
-
-    if action_type == 'click':
-        pyautogui.click(location)
-        print(f"Clicked on {image_path}")
-    elif action_type == 'right_click':
-        pyautogui.rightClick(location)
-        print(f"Right-clicked on {image_path}")
-    else:
-        # Optional: Handle unknown action types if needed, or just ignore
-        print(f"Action '{action_type}' performed on {image_path} at {location}")
-        # If you need specific actions beyond click/right_click, add them here.
-        # For now, we assume pyautogui handles other action strings if they exist,
-        # or you might want to raise an error for unsupported actions.
-
-    return location # Return location in case it's needed later
-
-while True:
-    try:
-        find_and_interact('switch-to-tablet.png', action_type='click', confidence=0.8)
-        time.sleep(1)  # Wait for 1 second after clicking
-        break
-    except pyautogui.ImageNotFoundException as e:
-        print(f"\nDid not find switch-to-tablet.png. Waiting for it...")
-        # Wait
-        print("Waiting for 1 second...")
-        time.sleep(1)
-        continue
-        # Centralized error handling for image not found
-
-# --- Main script execution ---
-try:
-    find_and_interact('switch-to-tablet.png', action_type='click', confidence=0.8)
-
-    # Find and right-click the logo
-    find_and_interact('lenovo.logo.png', action_type='right_click', confidence=0.8)
-
-    # Wait
-    print("Waiting for 1 second...")
-    time.sleep(1)
-
-    # Find and click the rotate button
-    find_and_interact('rotate.png', action_type='click', confidence=0.8)
-
-    print("Script completed successfully.")
-
-except pyautogui.ImageNotFoundException as e:
-    # Centralized error handling for image not found
-    print(f"\nError: Script terminated. Could not find required image.")
-    print(f"Details: {e}") # Attempt to print exception details
+def save_debug_screenshot_and_exit(failed_image_path):
+    """Saves a debug screenshot and exits the script."""
+    print(f"\nError: Script terminated. Could not find required image: {failed_image_path}")
 
     # --- Add Debug Screenshot ---
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -73,7 +19,67 @@ except pyautogui.ImageNotFoundException as e:
     # --- End Debug Screenshot ---
 
     sys.exit(1)
-except Exception as e:
-    # Catch any other unexpected errors during execution
-    print(f"\nAn unexpected error occurred: {e}")
-    sys.exit(1)
+
+def find_and_interact(image_path, action_type='click'):
+    """
+    Finds an image on screen, performs an action, retries if not found,
+    and handles errors including saving a debug screenshot and exiting on failure.
+    """
+    CONFIDENCE_LEVEL = 0.8
+    MAX_RETRIES = 3
+    RETRY_DELAY_SECONDS = 1
+
+    for attempt in range(MAX_RETRIES):
+        try:
+            location = pyautogui.locateCenterOnScreen(image_path, confidence=CONFIDENCE_LEVEL)
+            if location:
+                print(f"Found {image_path} at: {location}")
+
+                if action_type == 'click':
+                    pyautogui.click(location)
+                    print(f"Clicked on {image_path}")
+                elif action_type == 'right_click':
+                    pyautogui.rightClick(location)
+                    print(f"Right-clicked on {image_path}")
+                else:
+                    print(f"Action '{action_type}' performed on {image_path} at {location}")
+                    # Add other specific actions if needed
+
+                return location # Success, return location and exit function
+
+            else:
+                 # locateCenterOnScreen raises ImageNotFoundException if None,
+                 # but added for robustness in case behavior changes.
+                 # Explicitly raise to be caught by the except block below.
+                 raise pyautogui.ImageNotFoundException(f"locateCenterOnScreen returned None for {image_path}")
+
+        except pyautogui.ImageNotFoundException:
+            print(f"Attempt {attempt + 1}/{MAX_RETRIES}: {image_path} not found.")
+            if attempt < MAX_RETRIES - 1:
+                print(f"Waiting for {RETRY_DELAY_SECONDS} second(s) before retrying...")
+                time.sleep(RETRY_DELAY_SECONDS)
+            else:
+                # Last attempt failed, call the failure handler
+                save_debug_screenshot_and_exit(image_path)
+                # The line below won't be reached as the helper function exits
+                return None # Indicate failure if helper didn't exit (e.g., for testing)
+
+    # This part should ideally not be reached if MAX_RETRIES > 0
+    # because the loop either returns on success or exits on failure.
+    print(f"Exhausted retries for {image_path} without success or exit.")
+    return None
+
+# --- Main script execution ---
+find_and_interact('switch-to-tablet.png', action_type='click')
+
+    # Find and right-click the logo
+    find_and_interact('lenovo.logo.png', action_type='right_click')
+
+    # Wait
+    print("Waiting for 1 second...")
+    time.sleep(1)
+
+    # Find and click the rotate button
+    find_and_interact('rotate.png', action_type='click')
+
+    print("Script completed successfully.")
