@@ -2,20 +2,30 @@ import pyautogui
 import time
 import sys # Import sys to exit if images are not found
 import datetime # To timestamp the debug screenshot
+import logging # Import the logging module
+
+# --- Configure logging ---
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout) # Log to console
+    ]
+)
+# --- End logging configuration ---
 
 def save_debug_screenshot_and_exit(failed_image_path):
     """Saves a debug screenshot and exits the script."""
-    print(f"\nError: Script terminated. Could not find required image: {failed_image_path}")
+    logging.error(f"Script terminated. Could not find required image: {failed_image_path}")
 
     # --- Add Debug Screenshot ---
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     debug_screenshot_path = f"debug_screenshot_failure_{timestamp}.png"
     try:
         pyautogui.screenshot(debug_screenshot_path)
-        print(f"Saved a debug screenshot: {debug_screenshot_path}")
-        print("Please examine this screenshot to see if the expected image was visible on screen.")
+        logging.info(f"Saved a debug screenshot: {debug_screenshot_path}. Please examine it to see if the expected image was visible on screen.")
     except Exception as screen_err:
-        print(f"Could not save debug screenshot: {screen_err}")
+        logging.error(f"Could not save debug screenshot: {screen_err}")
     # --- End Debug Screenshot ---
 
     sys.exit(1)
@@ -35,16 +45,16 @@ def find_and_interact(image_path, action_type='click', max_retries=3):
         try:
             location = pyautogui.locateCenterOnScreen(image_path, confidence=CONFIDENCE_LEVEL)
             if location:
-                print(f"Found {image_path} at: {location}")
+                logging.info(f"Found {image_path} at: {location}")
 
                 if action_type == 'click':
                     pyautogui.click(location)
-                    print(f"Clicked on {image_path}")
+                    logging.info(f"Clicked on {image_path}")
                 elif action_type == 'right_click':
                     pyautogui.rightClick(location)
-                    print(f"Right-clicked on {image_path}")
+                    logging.info(f"Right-clicked on {image_path}")
                 else:
-                    print(f"Action '{action_type}' ignored on {image_path} at {location}")
+                    logging.info(f"Action '{action_type}' ignored on {image_path} at {location}")
                     # Add other specific actions if needed
 
                 return location # Success, return location and exit function
@@ -59,20 +69,20 @@ def find_and_interact(image_path, action_type='click', max_retries=3):
             attempt += 1
             # Check if we have exceeded retries, but only if max_retries is not infinite
             if max_retries != float('inf') and attempt >= max_retries:
-                print(f"Attempt {attempt}/{max_retries}: {image_path} not found. Max retries reached.")
+                logging.error(f"Attempt {attempt}/{max_retries}: {image_path} not found. Max retries reached.")
                 # Last attempt failed, call the failure handler
                 save_debug_screenshot_and_exit(image_path)
                 # The line below won't be reached as the helper function exits
                 return None # Indicate failure if helper didn't exit
 
-            print(f"Attempt {attempt}{f'/{max_retries}' if max_retries != float('inf') else ''}: {image_path} not found on screen. Retrying {f'indefinitely ' if max_retries == float('inf') else ''}(delay: {RETRY_DELAY_SECONDS}s).")
+            logging.info(f"Attempt {attempt}{f'/{max_retries}' if max_retries != float('inf') else ''}: {image_path} not found on screen. Retrying {f'indefinitely ' if max_retries == float('inf') else ''}(delay: {RETRY_DELAY_SECONDS}s).")
 
             time.sleep(RETRY_DELAY_SECONDS)
 
     # This part should ideally not be reached because the loop either
     # returns on success, exits on failure, or continues indefinitely.
     # Added for logical completeness in case loop condition changes.
-    print(f"Exited retry loop unexpectedly for {image_path}.")
+    logging.warning(f"Exited retry loop unexpectedly for {image_path}.")
     return None
 
 # --- Main script execution ---
@@ -84,10 +94,10 @@ find_and_interact('switch-to-tablet.png', action_type='click', max_retries=float
 find_and_interact('lenovo.logo.png', action_type='right_click')
 
 # Wait
-print("Waiting for 1 second...")
+logging.info("Waiting for 1 second...")
 time.sleep(1)
 
 # Find and click the rotate button
 find_and_interact('rotate.png', action_type='click')
 
-print("Script completed successfully.")
+logging.info("Script completed successfully.")
