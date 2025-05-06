@@ -20,16 +20,18 @@ def save_debug_screenshot_and_exit(failed_image_path):
 
     sys.exit(1)
 
-def find_and_interact(image_path, action_type='click'):
+def find_and_interact(image_path, action_type='click', max_retries=3):
     """
     Finds an image on screen, performs an action, retries if not found,
     and handles errors including saving a debug screenshot and exiting on failure.
+    Supports infinite retries if max_retries is float('inf').
     """
     CONFIDENCE_LEVEL = 0.8
-    MAX_RETRIES = 3
+    # MAX_RETRIES is now a parameter
     RETRY_DELAY_SECONDS = 1
 
-    for attempt in range(MAX_RETRIES):
+    attempt = 0
+    while True: # Loop potentially indefinitely
         try:
             location = pyautogui.locateCenterOnScreen(image_path, confidence=CONFIDENCE_LEVEL)
             if location:
@@ -54,23 +56,32 @@ def find_and_interact(image_path, action_type='click'):
                  raise pyautogui.ImageNotFoundException(f"locateCenterOnScreen returned None for {image_path}")
 
         except pyautogui.ImageNotFoundException:
-            print(f"Attempt {attempt + 1}/{MAX_RETRIES}: {image_path} not found.")
-            if attempt < MAX_RETRIES - 1:
-                print(f"Waiting for {RETRY_DELAY_SECONDS} second(s) before retrying...")
-                time.sleep(RETRY_DELAY_SECONDS)
-            else:
+            attempt += 1
+            # Check if we have exceeded retries, but only if max_retries is not infinite
+            if max_retries != float('inf') and attempt >= max_retries:
+                print(f"Attempt {attempt}/{max_retries}: {image_path} not found. Max retries reached.")
                 # Last attempt failed, call the failure handler
                 save_debug_screenshot_and_exit(image_path)
                 # The line below won't be reached as the helper function exits
-                return None # Indicate failure if helper didn't exit (e.g., for testing)
+                return None # Indicate failure if helper didn't exit
 
-    # This part should ideally not be reached if MAX_RETRIES > 0
-    # because the loop either returns on success or exits on failure.
-    print(f"Exhausted retries for {image_path} without success or exit.")
+            # Print retry message
+            if max_retries == float('inf'):
+                print(f"Attempt {attempt}: {image_path} not found. Retrying indefinitely...")
+            else:
+                print(f"Attempt {attempt}/{max_retries}: {image_path} not found.")
+                print(f"Waiting for {RETRY_DELAY_SECONDS} second(s) before retrying...")
+
+            time.sleep(RETRY_DELAY_SECONDS)
+
+    # This part should ideally not be reached because the loop either
+    # returns on success, exits on failure, or continues indefinitely.
+    # Added for logical completeness in case loop condition changes.
+    print(f"Exited retry loop unexpectedly for {image_path}.")
     return None
 
 # --- Main script execution ---
-find_and_interact('switch-to-tablet.png', action_type='click')
+find_and_interact('switch-to-tablet.png', action_type='click', max_retries=float('inf'))
 
 # Find and right-click the logo
 find_and_interact('lenovo.logo.png', action_type='right_click')
