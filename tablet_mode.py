@@ -27,8 +27,23 @@ def find_and_interact(image_path, action_type='click', confidence=0.8):
 
     return location # Return location in case it's needed later
 
+while True:
+    try:
+        find_and_interact('switch-to-tablet.png', action_type='click', confidence=0.8)
+        time.sleep(1)  # Wait for 1 second after clicking
+        break
+    except pyautogui.ImageNotFoundException as e:
+        print(f"\nDid not find switch-to-tablet.png. Waiting for it...")
+        # Wait
+        print("Waiting for 1 second...")
+        time.sleep(1)
+        continue
+        # Centralized error handling for image not found
+
 # --- Main script execution ---
 try:
+    find_and_interact('switch-to-tablet.png', action_type='click', confidence=0.8)
+
     # Find and right-click the logo
     find_and_interact('lenovo.logo.png', action_type='right_click', confidence=0.8)
 
