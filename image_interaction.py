@@ -1,6 +1,7 @@
 import pyautogui
 import time
 import sys # Import sys to exit if images are not found
+import datetime # To timestamp the debug screenshot
 
 def find_and_interact(image_path, action_type='click', confidence=0.8):
     """Finds an image on screen, performs an action, and handles not found errors."""
@@ -43,7 +44,19 @@ try:
 except pyautogui.ImageNotFoundException as e:
     # Centralized error handling for image not found
     print(f"\nError: Script terminated. Could not find required image.")
-    print(f"Details: {e}")
+    print(f"Details: {e}") # Attempt to print exception details
+
+    # --- Add Debug Screenshot ---
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    debug_screenshot_path = f"debug_screenshot_failure_{timestamp}.png"
+    try:
+        pyautogui.screenshot(debug_screenshot_path)
+        print(f"Saved a debug screenshot: {debug_screenshot_path}")
+        print("Please examine this screenshot to see if the expected image was visible on screen.")
+    except Exception as screen_err:
+        print(f"Could not save debug screenshot: {screen_err}")
+    # --- End Debug Screenshot ---
+
     sys.exit(1)
 except Exception as e:
     # Catch any other unexpected errors during execution
