@@ -4,14 +4,62 @@ import sys # Import sys to exit if images are not found
 import datetime # To timestamp the debug screenshot
 import logging # Import the logging module
 
+# --- Add these imports for screen rotation ---
+try:
+    import win32api
+    import win32con
+    PYWIN32_AVAILABLE = True
+except ImportError:
+    PYWIN32_AVAILABLE = False
+    # We will log a warning about this after logging is configured
+# --- End new imports ---
+
+# Helper function to get screen rotation string
+def get_screen_rotation_str():
+    if not PYWIN32_AVAILABLE:
+        return "RotN/A" # Rotation Not Available / pywin32 missing
+    try:
+        # Get settings for the primary display
+        settings = win32api.EnumDisplaySettings(None, win32con.ENUM_CURRENT_SETTINGS)
+        orientation_val = settings.dmDisplayOrientation
+
+        orientation_map = {
+            win32con.DMDO_DEFAULT: "0°",    # Landscape
+            win32con.DMDO_90:   "90°",   # Portrait
+            win32con.DMDO_180:  "180°",  # Landscape (flipped)
+            win32con.DMDO_270:  "270°"   # Portrait (flipped)
+        }
+        # Using short forms for brevity in logs
+        return orientation_map.get(orientation_val, f"Unk({orientation_val})")
+    except Exception:
+        return "RotErr" # Rotation Error during fetch
+
+# Custom filter to add screen rotation to log records
+class ScreenRotationFilter(logging.Filter):
+    def filter(self, record):
+        record.screen_rotation = get_screen_rotation_str() # Add new field to log record
+        return True
+
 # --- Configure logging ---
+# Create and configure the handler
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.addFilter(ScreenRotationFilter()) # Add our custom filter
+
+# Define the new log format including screen_rotation
+log_format = '%(asctime)s [%(screen_rotation)s] - %(levelname)s - %(message)s'
+formatter = logging.Formatter(log_format)
+console_handler.setFormatter(formatter)
+
+# Set up basic logging configuration using our custom-configured handler
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout) # Log to console
-    ]
+    handlers=[console_handler] # Pass the list containing our configured handler
 )
+
+# Log a warning if pywin32 is not available, now that logging is configured
+if not PYWIN32_AVAILABLE:
+    logging.warning("pywin32 library is not installed. Screen rotation will be shown as 'RotN/A'. "
+                    "Install with 'pip install pywin32' for actual rotation details in logs.")
 # --- End logging configuration ---
 
 def save_debug_screenshot_and_exit(failed_image_path):
