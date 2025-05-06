@@ -100,4 +100,8 @@ time.sleep(1)
 # Find and click the rotate button
 find_and_interact('rotate.png', action_type='click')
 
+time.sleep(3)  # Wait for the rotation to complete
+
+find_and_interact('windows-logo.png', action_type='click')
+
 logging.info("Script completed successfully.")
