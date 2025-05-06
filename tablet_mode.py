@@ -44,7 +44,7 @@ def find_and_interact(image_path, action_type='click', max_retries=3):
                     pyautogui.rightClick(location)
                     print(f"Right-clicked on {image_path}")
                 else:
-                    print(f"Action '{action_type}' performed on {image_path} at {location}")
+                    print(f"Action '{action_type}' ignored on {image_path} at {location}")
                     # Add other specific actions if needed
 
                 return location # Success, return location and exit function
@@ -65,7 +65,7 @@ def find_and_interact(image_path, action_type='click', max_retries=3):
                 # The line below won't be reached as the helper function exits
                 return None # Indicate failure if helper didn't exit
 
-            print(f"Attempt {attempt}{f'/{max_retries}' if max_retries != float('inf') else ''}: {image_path} not found. Retrying {f'indefinitely ' if max_retries == float('inf') else ''}(delay: {RETRY_DELAY_SECONDS}s).")
+            print(f"Attempt {attempt}{f'/{max_retries}' if max_retries != float('inf') else ''}: {image_path} not found on screen. Retrying {f'indefinitely ' if max_retries == float('inf') else ''}(delay: {RETRY_DELAY_SECONDS}s).")
 
             time.sleep(RETRY_DELAY_SECONDS)
 
@@ -76,6 +76,8 @@ def find_and_interact(image_path, action_type='click', max_retries=3):
     return None
 
 # --- Main script execution ---
+find_and_interact('switch-to-tablet.png', action_type=None, max_retries=float('inf'))
+time.sleep(1)  # Wait for the switch to tablet mode to complete 
 find_and_interact('switch-to-tablet.png', action_type='click', max_retries=float('inf'))
 
 # Find and right-click the logo
