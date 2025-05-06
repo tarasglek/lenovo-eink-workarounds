@@ -63,7 +63,7 @@ def find_and_interact(image_path, action_type='click', max_retries=3, wait_to_di
                     return location # Success (image found, no action), return location and exit function
 
                 # --- Start wait_to_disappear logic ---
-                if action_type in ['click', 'right_click'] and wait_to_disappear:
+                if wait_to_disappear:
                     logging.info(f"Waiting for {image_path} to disappear (max_retries for disappearance: {max_retries})...")
                     disappear_attempt = 0
                     while True: 
@@ -126,6 +126,8 @@ find_and_interact('switch-to-tablet.png', action_type=None, max_retries=float('i
 time.sleep(1)  # Wait for the switch to tablet mode to complete 
 find_and_interact('switch-to-tablet.png', action_type='click', max_retries=float('inf'))
 
+find_and_interact('windows-logo.png', action_type='click', wait_to_disappear=True)
+
 # Find and right-click the logo
 find_and_interact('lenovo.logo.png', action_type='right_click')
 
@@ -136,8 +138,5 @@ time.sleep(1)
 # Find and click the rotate button
 find_and_interact('rotate.png', action_type='click')
 
-time.sleep(3)  # Wait for the rotation to complete
-
-find_and_interact('windows-logo.png', action_type='click', wait_to_disappear=True)
 
 logging.info("Script completed successfully.")
