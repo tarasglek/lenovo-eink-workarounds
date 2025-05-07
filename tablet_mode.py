@@ -93,8 +93,11 @@ def save_debug_screenshot_and_exit(failed_image_path):
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     debug_screenshot_path = f"debug_screenshot_failure_{timestamp}.png"
     try:
+        start_time = time.perf_counter()
         pyautogui.screenshot(debug_screenshot_path)
-        logging.info(f"Saved a debug screenshot: {debug_screenshot_path}. Please examine it to see if the expected image was visible on screen.")
+        end_time = time.perf_counter()
+        duration_ms = (end_time - start_time) * 1000
+        logging.info(f"Saved a debug screenshot: {debug_screenshot_path} (took {duration_ms:.2f} ms). Please examine it to see if the expected image was visible on screen.")
     except Exception as screen_err:
         logging.error(f"Could not save debug screenshot: {screen_err}")
     # --- End Debug Screenshot ---
