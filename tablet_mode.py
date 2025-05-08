@@ -230,4 +230,7 @@ pyautogui.hotkey('alt', 'shift', 'printscreen')
 # Add a small delay to allow the system to process the hotkey, if needed
 time.sleep(1) # Adjust delay as necessary
 
+pyautogui.press('enter')
+logging.info("Pressed Enter key.")
+
 logging.info("Script completed successfully.")
