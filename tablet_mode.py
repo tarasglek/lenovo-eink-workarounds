@@ -32,6 +32,14 @@ try:
 except ImportError:
     PYWIN32_AVAILABLE = False
     # We will log a warning about this after logging is configured
+
+# --- Add these imports for pygetwindow ---
+try:
+    import pygetwindow as gw
+    PYGETWINDOW_AVAILABLE = True
+except ImportError:
+    PYGETWINDOW_AVAILABLE = False
+    # We will log a warning about this after logging is configured
 # --- End new imports ---
 
 # Helper function to get screen rotation string
@@ -57,19 +65,41 @@ def get_screen_rotation_str():
         traceback.print_exc(file=sys.stderr) # Print traceback to stderr
         return "RotErr" # Rotation Error during fetch
 
-# Custom filter to add screen rotation to log records
-class ScreenRotationFilter(logging.Filter):
+# Helper function to get active window info string
+def get_active_window_info_str():
+    if not PYGETWINDOW_AVAILABLE:
+        return "WinN/A" # pygetwindow Not Available
+    try:
+        active_window = gw.getActiveWindow()
+        if active_window:
+            # Truncate title if too long for cleaner logs
+            title = active_window.title
+            max_len = 30 # Max length for the title in logs
+            if len(title) > max_len:
+                title = title[:max_len-3] + "..."
+            return f"Win: '{title}'"
+        else:
+            return "Win: None" # No active window currently focused
+    except Exception as e: # Catch generic exceptions from pygetwindow
+        # Print error directly to stderr to avoid logging recursion
+        print(f"ERROR [get_active_window_info_str]: Error fetching active window: {e}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr) # Print traceback to stderr
+        return "WinErr" # Active Window Error during fetch
+
+# Custom filter to add screen rotation and active window info to log records
+class ContextualLogFilter(logging.Filter): # Renamed
     def filter(self, record):
-        record.screen_rotation = get_screen_rotation_str() # Add new field to log record
+        record.screen_rotation = get_screen_rotation_str()
+        record.active_window = get_active_window_info_str() # Add new field for active window
         return True
 
 # --- Configure logging ---
 # Create and configure the handler
 console_handler = logging.StreamHandler(sys.stdout)
-console_handler.addFilter(ScreenRotationFilter()) # Add our custom filter
+console_handler.addFilter(ContextualLogFilter()) # Add our custom (renamed) filter
 
 # Define the new log format including screen_rotation
-log_format = '%(asctime)s [%(screen_rotation)s] - %(levelname)s - %(message)s'
+log_format = '%(asctime)s [%(screen_rotation)s] [%(active_window)s] - %(levelname)s - %(message)s'
 formatter = logging.Formatter(log_format)
 console_handler.setFormatter(formatter)
 
@@ -83,6 +113,11 @@ logging.basicConfig(
 if not PYWIN32_AVAILABLE:
     logging.warning("pywin32 library is not installed. Screen rotation will be shown as 'RotN/A'. "
                     "Install with 'pip install pywin32' for actual rotation details in logs.")
+    
+# Log a warning if pygetwindow is not available, now that logging is configured
+if not PYGETWINDOW_AVAILABLE:
+    logging.warning("pygetwindow library is not installed. Active window info will be shown as 'WinN/A'. "
+                    "Install with 'pip install pygetwindow' for active window details in logs.")
 # --- End logging configuration ---
 
 def save_debug_screenshot_and_exit(failed_image_path):
