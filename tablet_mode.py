@@ -223,4 +223,11 @@ time.sleep(1)
 find_and_interact('rotate.png', action_type='click')
 
 
+# Simulate pressing Alt+Shift+PrintScreen to toggle High Contrast
+logging.info("Pressing Alt+Shift+PrintScreen...")
+pyautogui.hotkey('alt', 'shift', 'printscreen')
+
+# Add a small delay to allow the system to process the hotkey, if needed
+time.sleep(1) # Adjust delay as necessary
+
 logging.info("Script completed successfully.")
