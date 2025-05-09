@@ -25,27 +25,15 @@ import logging # Import the logging module
 import traceback # For printing error details without recursion
 
 # --- Add these imports for screen rotation ---
-try:
-    import win32api
-    import win32con
-    PYWIN32_AVAILABLE = True
-except ImportError:
-    PYWIN32_AVAILABLE = False
-    # We will log a warning about this after logging is configured
+import win32api
+import win32con
 
 # --- Add these imports for pygetwindow ---
-try:
-    import pygetwindow as gw
-    PYGETWINDOW_AVAILABLE = True
-except ImportError:
-    PYGETWINDOW_AVAILABLE = False
-    # We will log a warning about this after logging is configured
+import pygetwindow as gw
 # --- End new imports ---
 
 # Helper function to get screen rotation string
 def get_screen_rotation_str():
-    if not PYWIN32_AVAILABLE:
-        return "RotN/A" # Rotation Not Available / pywin32 missing
     try:
         # Get settings for the primary display
         settings = win32api.EnumDisplaySettings(None, win32con.ENUM_CURRENT_SETTINGS)
@@ -67,8 +55,6 @@ def get_screen_rotation_str():
 
 # Helper function to get active window info string
 def get_active_window_info_str():
-    if not PYGETWINDOW_AVAILABLE:
-        return "WinN/A" # pygetwindow Not Available
     try:
         active_window = gw.getActiveWindow()
         if active_window:
@@ -105,15 +91,6 @@ logging.basicConfig(
     handlers=[console_handler] # Pass the list containing our configured handler
 )
 
-# Log a warning if pywin32 is not available, now that logging is configured
-if not PYWIN32_AVAILABLE:
-    logging.warning("pywin32 library is not installed. Screen rotation will be shown as 'RotN/A'. "
-                    "Install with 'pip install pywin32' for actual rotation details in logs.")
-    
-# Log a warning if pygetwindow is not available, now that logging is configured
-if not PYGETWINDOW_AVAILABLE:
-    logging.warning("pygetwindow library is not installed. Active window info will be shown as 'WinN/A'. "
-                    "Install with 'pip install pygetwindow' for active window details in logs.")
 # --- End logging configuration ---
 
 def save_debug_screenshot_and_exit(failed_image_path):
