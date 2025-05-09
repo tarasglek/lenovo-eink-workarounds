@@ -34,6 +34,30 @@ import pygetwindow as gw
 
 # --- End new imports ---
 
+_WINDOW_TITLE_ERROR_MARKER = object()  # Unique marker for title fetching errors
+
+def _get_current_active_title_or_marker():
+    """
+    Attempts to get the title of the currently active window.
+    Returns:
+        - The title string if a window is active.
+        - None if no window is currently active.
+        - _WINDOW_TITLE_ERROR_MARKER if an exception occurs during fetching.
+    """
+    try:
+        active_window = gw.getActiveWindow()
+        if active_window:
+            return active_window.title
+        return None  # No active window
+    except Exception as e:
+        # Print error directly to stderr to avoid logging recursion if this
+        # function is called by the logger context filter.
+        print(
+            f"ERROR [_get_current_active_title_or_marker]: Error fetching active window: {e}",
+            file=sys.stderr,
+        )
+        traceback.print_exc(file=sys.stderr)
+        return _WINDOW_TITLE_ERROR_MARKER
 
 # Helper function to get screen rotation string
 def get_screen_rotation_str():
