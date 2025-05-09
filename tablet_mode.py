@@ -72,12 +72,8 @@ def get_active_window_info_str():
     try:
         active_window = gw.getActiveWindow()
         if active_window:
-            # Truncate title if too long for cleaner logs
-            title = active_window.title
-            max_len = 30 # Max length for the title in logs
-            if len(title) > max_len:
-                title = title[:max_len-3] + "..."
-            return f"Win: '{title}'"
+            title = active_window.title # Get the full title
+            return f"Win: '{title}'" # Use the full title in the log
         else:
             return "Win: None" # No active window currently focused
     except Exception as e: # Catch generic exceptions from pygetwindow
