@@ -19,10 +19,10 @@
 # uv run tablet_mode.py
 import pyautogui
 import time
-import sys # Import sys to exit if images are not found
-import datetime # To timestamp the debug screenshot
-import logging # Import the logging module
-import traceback # For printing error details without recursion
+import sys  # Import sys to exit if images are not found
+import datetime  # To timestamp the debug screenshot
+import logging  # Import the logging module
+import traceback  # For printing error details without recursion
 
 # --- Add these imports for screen rotation ---
 import win32api
@@ -30,7 +30,9 @@ import win32con
 
 # --- Add these imports for pygetwindow ---
 import pygetwindow as gw
+
 # --- End new imports ---
+
 
 # Helper function to get screen rotation string
 def get_screen_rotation_str():
@@ -40,62 +42,76 @@ def get_screen_rotation_str():
         orientation_val = settings.DisplayOrientation
 
         orientation_map = {
-            win32con.DMDO_DEFAULT: "0°",    # Landscape
-            win32con.DMDO_90:   "90°",   # Portrait
-            win32con.DMDO_180:  "180°",  # Landscape (flipped)
-            win32con.DMDO_270:  "270°"   # Portrait (flipped)
+            win32con.DMDO_DEFAULT: "0°",  # Landscape
+            win32con.DMDO_90: "90°",  # Portrait
+            win32con.DMDO_180: "180°",  # Landscape (flipped)
+            win32con.DMDO_270: "270°",  # Portrait (flipped)
         }
         # Using short forms for brevity in logs
         return orientation_map.get(orientation_val, f"Unk({orientation_val})")
     except Exception as e:
         # Print error directly to stderr to avoid logging recursion
-        print(f"ERROR [get_screen_rotation_str]: Error fetching screen rotation: {e}", file=sys.stderr)
-        traceback.print_exc(file=sys.stderr) # Print traceback to stderr
-        return "RotErr" # Rotation Error during fetch
+        print(
+            f"ERROR [get_screen_rotation_str]: Error fetching screen rotation: {e}",
+            file=sys.stderr,
+        )
+        traceback.print_exc(file=sys.stderr)  # Print traceback to stderr
+        return "RotErr"  # Rotation Error during fetch
+
 
 # Helper function to get active window info string
 def get_active_window_info_str():
     try:
         active_window = gw.getActiveWindow()
         if active_window:
-            title = active_window.title # Get the full title
-            return f"Win: '{title}'" # Use the full title in the log
+            title = active_window.title  # Get the full title
+            return f"Win: '{title}'"  # Use the full title in the log
         else:
-            return "Win: None" # No active window currently focused
-    except Exception as e: # Catch generic exceptions from pygetwindow
+            return "Win: None"  # No active window currently focused
+    except Exception as e:  # Catch generic exceptions from pygetwindow
         # Print error directly to stderr to avoid logging recursion
-        print(f"ERROR [get_active_window_info_str]: Error fetching active window: {e}", file=sys.stderr)
-        traceback.print_exc(file=sys.stderr) # Print traceback to stderr
-        return "WinErr" # Active Window Error during fetch
+        print(
+            f"ERROR [get_active_window_info_str]: Error fetching active window: {e}",
+            file=sys.stderr,
+        )
+        traceback.print_exc(file=sys.stderr)  # Print traceback to stderr
+        return "WinErr"  # Active Window Error during fetch
+
 
 # Custom filter to add screen rotation and active window info to log records
-class ContextualLogFilter(logging.Filter): # Renamed
+class ContextualLogFilter(logging.Filter):  # Renamed
     def filter(self, record):
         record.screen_rotation = get_screen_rotation_str()
-        record.active_window = get_active_window_info_str() # Add new field for active window
+        record.active_window = (
+            get_active_window_info_str()
+        )  # Add new field for active window
         return True
+
 
 # --- Configure logging ---
 # Create and configure the handler
 console_handler = logging.StreamHandler(sys.stdout)
-console_handler.addFilter(ContextualLogFilter()) # Add our custom (renamed) filter
+console_handler.addFilter(ContextualLogFilter())  # Add our custom (renamed) filter
 
 # Define the new log format including screen_rotation
-log_format = '%(asctime)s [%(screen_rotation)s] [%(active_window)s] - %(levelname)s - %(message)s'
+log_format = "%(asctime)s [%(screen_rotation)s] [%(active_window)s] - %(levelname)s - %(message)s"
 formatter = logging.Formatter(log_format)
 console_handler.setFormatter(formatter)
 
 # Set up basic logging configuration using our custom-configured handler
 logging.basicConfig(
     level=logging.INFO,
-    handlers=[console_handler] # Pass the list containing our configured handler
+    handlers=[console_handler],  # Pass the list containing our configured handler
 )
 
 # --- End logging configuration ---
 
+
 def save_debug_screenshot_and_exit(failed_image_path):
     """Saves a debug screenshot and exits the script."""
-    logging.error(f"Script terminated. Could not find required image: {failed_image_path}")
+    logging.error(
+        f"Script terminated. Could not find required image: {failed_image_path}"
+    )
 
     # --- Add Debug Screenshot ---
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -105,14 +121,19 @@ def save_debug_screenshot_and_exit(failed_image_path):
         pyautogui.screenshot(debug_screenshot_path)
         end_time = time.perf_counter()
         duration_ms = (end_time - start_time) * 1000
-        logging.info(f"Saved a debug screenshot: {debug_screenshot_path} (took {duration_ms:.2f} ms). Please examine it to see if the expected image was visible on screen.")
+        logging.info(
+            f"Saved a debug screenshot: {debug_screenshot_path} (took {duration_ms:.2f} ms). Please examine it to see if the expected image was visible on screen."
+        )
     except Exception as screen_err:
         logging.error(f"Could not save debug screenshot: {screen_err}")
     # --- End Debug Screenshot ---
 
     sys.exit(1)
 
-def find_and_interact(image_path, action_type='click', max_retries=3, wait_to_disappear=False):
+
+def find_and_interact(
+    image_path, action_type="click", max_retries=3, wait_to_disappear=False
+):
     """
     Finds an image on screen, performs an action, retries if not found,
     and handles errors including saving a debug screenshot and exiting on failure.
@@ -124,86 +145,125 @@ def find_and_interact(image_path, action_type='click', max_retries=3, wait_to_di
 
     initial_location = None
     attempt = 0
-    while True: # Loop potentially indefinitely
+    while True:  # Loop potentially indefinitely
         try:
-            location = pyautogui.locateCenterOnScreen(image_path, confidence=CONFIDENCE_LEVEL)
+            location = pyautogui.locateCenterOnScreen(
+                image_path, confidence=CONFIDENCE_LEVEL
+            )
             if location:
                 logging.info(f"Found {image_path} at: {location}")
 
-                initial_location = location # Store the first location
+                initial_location = location  # Store the first location
 
-                if action_type == 'click':
+                if action_type == "click":
                     pyautogui.click(location)
                     logging.info(f"Clicked on {image_path}")
-                elif action_type == 'right_click':
+                elif action_type == "right_click":
                     pyautogui.rightClick(location)
                     logging.info(f"Right-clicked on {image_path}")
                 else:
-                    logging.info(f"Action '{action_type}' ignored on {image_path} at {location}")
+                    logging.info(
+                        f"Action '{action_type}' ignored on {image_path} at {location}"
+                    )
                     if wait_to_disappear:
-                        logging.warning(f"wait_to_disappear=True but action_type is '{action_type}'. Disappearance check will be skipped as no action was performed to make it disappear.")
-                    return location # Success (image found, no action), return location and exit function
+                        logging.warning(
+                            f"wait_to_disappear=True but action_type is '{action_type}'. Disappearance check will be skipped as no action was performed to make it disappear."
+                        )
+                    return location  # Success (image found, no action), return location and exit function
 
                 # --- Start wait_to_disappear logic ---
                 if wait_to_disappear:
-                    logging.info(f"Waiting for {image_path} to disappear (action will be retried up to {max_retries} times if it doesn't)...")
-                    disappear_retry_count = 0 # Number of times the action has been retried
-                    
+                    logging.info(
+                        f"Waiting for {image_path} to disappear (action will be retried up to {max_retries} times if it doesn't)..."
+                    )
+                    disappear_retry_count = (
+                        0  # Number of times the action has been retried
+                    )
+
                     while True:
-                        time.sleep(RETRY_DELAY_SECONDS) # Wait before checking visibility / after an action
+                        time.sleep(
+                            RETRY_DELAY_SECONDS
+                        )  # Wait before checking visibility / after an action
 
                         try:
                             # Attempt to find the image. If it's gone, pyautogui.locateCenterOnScreen will raise ImageNotFoundException.
-                            current_location_check = pyautogui.locateCenterOnScreen(image_path, confidence=CONFIDENCE_LEVEL)
-                            
+                            current_location_check = pyautogui.locateCenterOnScreen(
+                                image_path, confidence=CONFIDENCE_LEVEL
+                            )
+
                             # If we are here, the image is STILL VISIBLE.
                             # Check if we have exhausted retries for re-performing the action.
-                            if max_retries != float('inf') and disappear_retry_count >= max_retries:
-                                logging.error(f"Image {image_path} did not disappear after {disappear_retry_count} re-attempts of action '{action_type}'. Max retries reached.")
-                                save_debug_screenshot_and_exit(f"{image_path} (failed to disappear after {disappear_retry_count} re-attempts of action)")
-                                return initial_location # Should not be reached due to exit
+                            if (
+                                max_retries != float("inf")
+                                and disappear_retry_count >= max_retries
+                            ):
+                                logging.error(
+                                    f"Image {image_path} did not disappear after {disappear_retry_count} re-attempts of action '{action_type}'. Max retries reached."
+                                )
+                                save_debug_screenshot_and_exit(
+                                    f"{image_path} (failed to disappear after {disappear_retry_count} re-attempts of action)"
+                                )
+                                return initial_location  # Should not be reached due to exit
 
                             # Image is still visible, and we have retries left (or infinite retries).
-                            logging.info(f"Disappearance check: {image_path} still visible at {current_location_check}. Re-attempting action '{action_type}' (re-attempt {disappear_retry_count + 1}{f'/{max_retries}' if max_retries != float('inf') else '/inf'}).")
-                            
+                            logging.info(
+                                f"Disappearance check: {image_path} still visible at {current_location_check}. Re-attempting action '{action_type}' (re-attempt {disappear_retry_count + 1}{f'/{max_retries}' if max_retries != float('inf') else '/inf'})."
+                            )
+
                             # Re-perform the action on the (potentially new) location
-                            if action_type == 'click':
+                            if action_type == "click":
                                 pyautogui.click(current_location_check)
-                                logging.info(f"Clicked again on {image_path} at {current_location_check}")
-                            elif action_type == 'right_click':
+                                logging.info(
+                                    f"Clicked again on {image_path} at {current_location_check}"
+                                )
+                            elif action_type == "right_click":
                                 pyautogui.rightClick(current_location_check)
-                                logging.info(f"Right-clicked again on {image_path} at {current_location_check}")
+                                logging.info(
+                                    f"Right-clicked again on {image_path} at {current_location_check}"
+                                )
                             # Add other action types here if they are supported by wait_to_disappear
 
-                            disappear_retry_count += 1 # Increment the count of re-attempts
+                            disappear_retry_count += (
+                                1  # Increment the count of re-attempts
+                            )
 
                         except pyautogui.ImageNotFoundException:
                             # SUCCESS: ImageNotFoundException means the image is no longer found.
-                            total_actions_performed = disappear_retry_count + 1 # Initial action + number of retries
-                            logging.info(f"{image_path} has disappeared as expected. Total actions performed: {total_actions_performed}.")
-                            break # Exit disappearance loop, success
+                            total_actions_performed = (
+                                disappear_retry_count + 1
+                            )  # Initial action + number of retries
+                            logging.info(
+                                f"{image_path} has disappeared as expected. Total actions performed: {total_actions_performed}."
+                            )
+                            break  # Exit disappearance loop, success
                     # End of disappearance while-loop
                 # --- End wait_to_disappear logic ---
-                
-                return initial_location # Success, return initial_location and exit function
+
+                return initial_location  # Success, return initial_location and exit function
 
             else:
-                 # locateCenterOnScreen raises ImageNotFoundException if None,
-                 # but added for robustness in case behavior changes.
-                 # Explicitly raise to be caught by the except block below.
-                 raise pyautogui.ImageNotFoundException(f"locateCenterOnScreen returned None for {image_path}")
+                # locateCenterOnScreen raises ImageNotFoundException if None,
+                # but added for robustness in case behavior changes.
+                # Explicitly raise to be caught by the except block below.
+                raise pyautogui.ImageNotFoundException(
+                    f"locateCenterOnScreen returned None for {image_path}"
+                )
 
         except pyautogui.ImageNotFoundException:
             attempt += 1
             # Check if we have exceeded retries, but only if max_retries is not infinite
-            if max_retries != float('inf') and attempt >= max_retries:
-                logging.error(f"Attempt {attempt}/{max_retries}: {image_path} not found. Max retries reached.")
+            if max_retries != float("inf") and attempt >= max_retries:
+                logging.error(
+                    f"Attempt {attempt}/{max_retries}: {image_path} not found. Max retries reached."
+                )
                 # Last attempt failed, call the failure handler
                 save_debug_screenshot_and_exit(image_path)
                 # The line below won't be reached as the helper function exits
-                return None # Indicate failure if helper didn't exit
+                return None  # Indicate failure if helper didn't exit
 
-            logging.info(f"Attempt {attempt}{f'/{max_retries}' if max_retries != float('inf') else ''}: {image_path} not found on screen. Retrying {f'indefinitely ' if max_retries == float('inf') else ''}(delay: {RETRY_DELAY_SECONDS}s).")
+            logging.info(
+                f"Attempt {attempt}{f'/{max_retries}' if max_retries != float('inf') else ''}: {image_path} not found on screen. Retrying {f'indefinitely ' if max_retries == float('inf') else ''}(delay: {RETRY_DELAY_SECONDS}s)."
+            )
 
             time.sleep(RETRY_DELAY_SECONDS)
 
@@ -213,32 +273,34 @@ def find_and_interact(image_path, action_type='click', max_retries=3, wait_to_di
     logging.warning(f"Exited retry loop unexpectedly for {image_path}.")
     return None
 
-# --- Main script execution ---
-find_and_interact('switch-to-tablet.png', action_type=None, max_retries=float('inf'))
-time.sleep(1)  # Wait for the switch to tablet mode to complete 
-find_and_interact('switch-to-tablet.png', action_type='click', max_retries=float('inf'))
 
-find_and_interact('windows-logo.png', action_type='click', wait_to_disappear=True)
+# if False:
+# --- Main script execution ---
+find_and_interact("switch-to-tablet.png", action_type=None, max_retries=float("inf"))
+time.sleep(1)  # Wait for the switch to tablet mode to complete
+find_and_interact("switch-to-tablet.png", action_type="click", max_retries=float("inf"))
+
+find_and_interact("windows-logo.png", action_type="click", wait_to_disappear=True)
 
 # Find and right-click the logo
-find_and_interact('lenovo.logo.png', action_type='right_click')
+find_and_interact("lenovo.logo.png", action_type="right_click")
 
 # Wait
 logging.info("Waiting for 1 second...")
 time.sleep(1)
 
 # Find and click the rotate button
-find_and_interact('rotate.png', action_type='click')
+find_and_interact("rotate.png", action_type="click")
 
 
 # Simulate pressing Alt+Shift+PrintScreen to toggle High Contrast
 logging.info("Pressing Alt+Shift+PrintScreen...")
-pyautogui.hotkey('alt', 'shift', 'printscreen')
+pyautogui.hotkey("alt", "shift", "printscreen")
 
 # Add a small delay to allow the system to process the hotkey, if needed
-time.sleep(1) # Adjust delay as necessary
+time.sleep(1)  # Adjust delay as necessary
 
-pyautogui.press('enter')
+pyautogui.press("enter")
 logging.info("Pressed Enter key.")
 
 logging.info("Script completed successfully.")
