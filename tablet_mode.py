@@ -297,7 +297,8 @@ if True:
     # Find and click the rotate button
     find_and_interact("rotate.png", action_type="click")
 
-# press Press: Ctrl + Windows key + 1
+logging.info("Pressing Ctrl + Windows key + 1...")
+pyautogui.hotkey('ctrl', 'win', '1')
 
 # Launch High Contrast settings page
 logging.info(
