@@ -117,6 +117,30 @@ def _get_current_active_title_or_marker():
         return _WINDOW_TITLE_ERROR_MARKER
 
 
+def press_with_pause(key_or_keys, pause_seconds=0.1):
+    """
+    Presses a key (or a combination of keys) and then pauses.
+
+    Args:
+        key_or_keys: A string for a single key, or a list/tuple of strings for a hotkey combination.
+        pause_seconds (float): Duration to pause after the key press. Defaults to 0.1.
+    """
+    action_description = ""
+    if isinstance(key_or_keys, (list, tuple)):
+        action_description = f"hotkey: {', '.join(key_or_keys)}"
+        pyautogui.hotkey(*key_or_keys)
+    else:
+        action_description = f"key: '{key_or_keys}'"
+        pyautogui.press(key_or_keys)
+
+    if pause_seconds > 0:
+        logging.info(f"Pressed {action_description} and pausing for {pause_seconds}s.")
+        time.sleep(pause_seconds)
+    else:
+        # Log even if no pause, to indicate the action was performed by this function
+        logging.info(f"Pressed {action_description} (no explicit pause after via this function).")
+
+
 # Helper function to get screen rotation string
 def get_screen_rotation_str():
     try:
@@ -393,19 +417,16 @@ active_settings_window_title = wait_for_window_title("Settings")
 time.sleep(4)
 # Press Tab twice
 logging.info("Pressing Tab twice...")
-pyautogui.press("tab")
-time.sleep(0.1)  # Small delay between key presses if needed
-pyautogui.press("tab")
-# press down 7 times
-logging.info("Pressing Down 7 times...")
+press_with_pause("tab", pause_seconds=0.1)  # First tab with pause
+pyautogui.press("tab")                     # Second tab (original had no sleep after this specific press)
+# press down 6 times (loop iterates 6 times)
+logging.info("Pressing Down 6 times...") # Adjusted comment to match loop
 for _ in range(6):
-    pyautogui.press("down")
-    time.sleep(0.1)  # Small delay between key presses if needed
+    press_with_pause("down", pause_seconds=0.1)
 # tab, then enter
 logging.info("Pressing Tab, then Enter...")
-pyautogui.press("tab")
-time.sleep(0.1)  # Small delay between key presses if needed
-pyautogui.press("enter")
+press_with_pause("tab", pause_seconds=0.1)  # Tab with pause
+pyautogui.press("enter")                   # Enter (original had no sleep after this specific press)
 
 active_settings_window_title = wait_for_window_title(
     "Settings", max_wait_seconds=30, interval_seconds=0.5
