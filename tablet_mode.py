@@ -275,39 +275,38 @@ def find_and_interact(
     return None
 
 
-# if False:
-# --- Main script execution ---
-find_and_interact("switch-to-tablet.png", action_type=None, max_retries=float("inf"))
-time.sleep(1)  # Wait for the switch to tablet mode to complete
-find_and_interact("switch-to-tablet.png", action_type="click", max_retries=float("inf"))
+if True:
+    # --- Main script execution ---
+    find_and_interact(
+        "switch-to-tablet.png", action_type=None, max_retries=float("inf")
+    )
+    time.sleep(1)  # Wait for the switch to tablet mode to complete
+    find_and_interact(
+        "switch-to-tablet.png", action_type="click", max_retries=float("inf")
+    )
 
-find_and_interact("windows-logo.png", action_type="click", wait_to_disappear=True)
+    find_and_interact("windows-logo.png", action_type="click", wait_to_disappear=True)
 
-# Find and right-click the logo
-find_and_interact("lenovo.logo.png", action_type="right_click")
+    # Find and right-click the logo
+    find_and_interact("lenovo.logo.png", action_type="right_click")
 
-# Wait
-logging.info("Waiting for 1 second...")
-time.sleep(1)
+    # Wait
+    logging.info("Waiting for 1 second...")
+    time.sleep(1)
 
-# Find and click the rotate button
-find_and_interact("rotate.png", action_type="click")
+    # Find and click the rotate button
+    find_and_interact("rotate.png", action_type="click")
 
+# press Press: Ctrl + Windows key + 1
 
 # Launch High Contrast settings page
-logging.info("Launching High Contrast settings page (ms-settings:easeofaccess-highcontrast)...")
-try:
-    # Using explorer.exe to open ms-settings URIs is a common way
-    subprocess.run(["explorer.exe", "ms-settings:easeofaccess-highcontrast"], check=True, shell=True)
-    logging.info("Successfully launched High Contrast settings page.")
-    # Add a small delay to allow the settings page to open and become active if needed
-    time.sleep(2) # Adjust as necessary, or remove if no further interaction is immediately needed
-except subprocess.CalledProcessError as e:
-    logging.error(f"Failed to launch High Contrast settings page. Command returned error: {e}")
-except FileNotFoundError:
-    # This would be unusual on Windows, but good practice to handle
-    logging.error("Failed to launch High Contrast settings page: explorer.exe not found.")
-except Exception as e:
-    logging.error(f"An unexpected error occurred while launching High Contrast settings: {e}")
+logging.info(
+    "Launching High Contrast settings page (ms-settings:easeofaccess-highcontrast)..."
+)
+subprocess.run(
+    ["explorer.exe", "ms-settings:easeofaccess-highcontrast"],
+    check=False,
+    shell=True,
+)
 
 logging.info("Script completed successfully.")
