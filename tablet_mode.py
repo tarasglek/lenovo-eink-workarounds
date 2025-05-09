@@ -275,7 +275,7 @@ def find_and_interact(
     return None
 
 
-if True:
+if False:
     # --- Main script execution ---
     find_and_interact(
         "switch-to-tablet.png", action_type=None, max_retries=float("inf")
@@ -298,7 +298,7 @@ if True:
     find_and_interact("rotate.png", action_type="click")
 
 logging.info("Pressing Ctrl + Windows key + 1...")
-pyautogui.hotkey('ctrl', 'win', '1')
+pyautogui.hotkey("ctrl", "win", "1")
 
 # Launch High Contrast settings page
 logging.info(
