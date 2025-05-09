@@ -37,6 +37,47 @@ import pygetwindow as gw
 _WINDOW_TITLE_ERROR_MARKER = object()  # Unique marker for title fetching errors
 
 
+def wait_for_window_title(target_title_substring, max_wait_seconds=30, interval_seconds=0.5, exit_on_timeout=True):
+    """
+    Waits for a window containing the target_title_substring to become active.
+
+    Args:
+        target_title_substring (str): The substring to look for in the active window's title.
+        max_wait_seconds (int): Maximum time in seconds to wait for the window.
+        interval_seconds (float): How often in seconds to check for the window.
+        exit_on_timeout (bool): If True, calls save_debug_screenshot_and_exit on timeout.
+
+    Returns:
+        str: The full title of the active window if found.
+        None: If timeout occurs and exit_on_timeout is False.
+              (If exit_on_timeout is True, the script will exit instead of returning None).
+    """
+    logging.info(f"Waiting for window with title containing: '{target_title_substring}'...")
+    start_time = time.perf_counter()
+
+    while True:
+        current_title = _get_current_active_title_or_marker()
+
+        if isinstance(current_title, str) and target_title_substring in current_title:
+            logging.info(f"Target window '{current_title}' (containing '{target_title_substring}') found and active.")
+            return current_title  # Success
+
+        elapsed_time = time.perf_counter() - start_time
+        if elapsed_time >= max_wait_seconds:
+            logging.error(
+                f"Timeout: Window with title substring '{target_title_substring}' did not become active within {max_wait_seconds} seconds."
+            )
+            if exit_on_timeout:
+                # Sanitize substring for filename
+                safe_substring = "".join(c if c.isalnum() else "_" for c in target_title_substring)
+                save_debug_screenshot_and_exit(f"Timeout_waiting_for_window_{safe_substring[:30]}") # Pass a descriptive message
+            return None  # Timeout
+
+        # Log concisely; the contextual logger will show the current window state if any.
+        logging.info(f"Still waiting for '{target_title_substring}'. Retrying in {interval_seconds}s.")
+        time.sleep(interval_seconds)
+
+
 def _get_current_active_title_or_marker():
     """
     Attempts to get the title of the currently active window.
@@ -332,37 +373,11 @@ subprocess.run(
 )
 
 # Wait for the Settings window to become active
-logging.info("Waiting for 'Settings' window to become active...")
-max_wait_time_seconds = 30  # Maximum time to wait for the window
-wait_interval_seconds = 0.5  # How often to check
+active_settings_window_title = wait_for_window_title("Settings", max_wait_seconds=30, interval_seconds=0.5)
+# If the function returns, the window was found (due to default exit_on_timeout=True).
+# The script will have exited via save_debug_screenshot_and_exit if the window wasn't found in time.
 
-start_loop_time = time.perf_counter()
-
-while True:
-    title_result = (
-        _get_current_active_title_or_marker()
-    )  # Assumes this helper is defined
-
-    if isinstance(title_result, str) and "Settings" in title_result:
-        logging.info("Target 'Settings' window found and active. Proceeding.")
-        break  # Successfully found the window
-
-    # Check for timeout
-    if (time.perf_counter() - start_loop_time) >= max_wait_time_seconds:
-        logging.error(
-            f"'Settings' window did not become active within {max_wait_time_seconds} seconds. Timeout."
-        )
-        # Optionally, call save_debug_screenshot_and_exit here if this is critical
-        # save_debug_screenshot_and_exit("Settings_window_timeout_loop")
-        sys.exit(1)  # Exit due to timeout
-
-    # If not found and not timed out, log concisely and wait
-    # The contextual logger will show the current window state.
-    logging.info(f"Still waiting for 'Settings'. Retrying in {wait_interval_seconds}s.")
-
-    time.sleep(wait_interval_seconds)
-
-# The script continues here if the loop breaks (Settings window found)
+# The script continues here if the window was found
 # The next line in your script was time.sleep(2)
 time.sleep(4)
 # Press Tab twice
