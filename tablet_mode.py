@@ -310,4 +310,44 @@ subprocess.run(
     shell=True,
 )
 
+# Wait for the Settings window to become active
+logging.info("Waiting for 'Settings' window to become active...")
+settings_window_active = False
+max_wait_time_seconds = 30  # Maximum time to wait for the window
+wait_interval_seconds = 0.5 # How often to check
+elapsed_time = 0
+
+while not settings_window_active and elapsed_time < max_wait_time_seconds:
+    try:
+        active_window = gw.getActiveWindow()
+        if active_window and "Settings" in active_window.title:
+            logging.info(f"Active window is now: '{active_window.title}'. Proceeding.")
+            settings_window_active = True
+        else:
+            # Log current active window if it's not None, for debugging
+            current_title = active_window.title if active_window else "None"
+            logging.info(
+                f"Waiting... Current active window: '{current_title}'. Looking for 'Settings'."
+            )
+            time.sleep(wait_interval_seconds)
+            elapsed_time += wait_interval_seconds
+    except Exception as e:
+        logging.warning(f"Error while checking active window: {e}. Retrying...")
+        time.sleep(wait_interval_seconds)
+        elapsed_time += wait_interval_seconds
+
+if not settings_window_active:
+    logging.error(
+        f"Settings window did not become active within {max_wait_time_seconds} seconds. Exiting."
+    )
+    # Optionally, call save_debug_screenshot_and_exit here if this is critical
+    # save_debug_screenshot_and_exit("Settings_window_timeout")
+    sys.exit(1) # Exit if window not found
+
+# Press Tab twice
+logging.info("Pressing Tab twice...")
+pyautogui.press('tab')
+time.sleep(0.1) # Small delay between key presses if needed
+pyautogui.press('tab')
+
 logging.info("Script completed successfully.")
