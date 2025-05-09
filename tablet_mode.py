@@ -23,6 +23,7 @@ import sys  # Import sys to exit if images are not found
 import datetime  # To timestamp the debug screenshot
 import logging  # Import the logging module
 import traceback  # For printing error details without recursion
+import subprocess  # For running system commands
 
 # --- Add these imports for screen rotation ---
 import win32api
@@ -293,14 +294,20 @@ time.sleep(1)
 find_and_interact("rotate.png", action_type="click")
 
 
-# Simulate pressing Alt+Shift+PrintScreen to toggle High Contrast
-logging.info("Pressing Alt+Shift+PrintScreen...")
-pyautogui.hotkey("alt", "shift", "printscreen")
-
-# Add a small delay to allow the system to process the hotkey, if needed
-time.sleep(1)  # Adjust delay as necessary
-
-pyautogui.press("enter")
-logging.info("Pressed Enter key.")
+# Launch High Contrast settings page
+logging.info("Launching High Contrast settings page (ms-settings:easeofaccess-highcontrast)...")
+try:
+    # Using explorer.exe to open ms-settings URIs is a common way
+    subprocess.run(["explorer.exe", "ms-settings:easeofaccess-highcontrast"], check=True, shell=True)
+    logging.info("Successfully launched High Contrast settings page.")
+    # Add a small delay to allow the settings page to open and become active if needed
+    time.sleep(2) # Adjust as necessary, or remove if no further interaction is immediately needed
+except subprocess.CalledProcessError as e:
+    logging.error(f"Failed to launch High Contrast settings page. Command returned error: {e}")
+except FileNotFoundError:
+    # This would be unusual on Windows, but good practice to handle
+    logging.error("Failed to launch High Contrast settings page: explorer.exe not found.")
+except Exception as e:
+    logging.error(f"An unexpected error occurred while launching High Contrast settings: {e}")
 
 logging.info("Script completed successfully.")
