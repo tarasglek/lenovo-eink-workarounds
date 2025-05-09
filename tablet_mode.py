@@ -37,7 +37,12 @@ import pygetwindow as gw
 _WINDOW_TITLE_ERROR_MARKER = object()  # Unique marker for title fetching errors
 
 
-def wait_for_window_title(target_title_substring, max_wait_seconds=30, interval_seconds=0.5, exit_on_timeout=True):
+def wait_for_window_title(
+    target_title_substring,
+    max_wait_seconds=30,
+    interval_seconds=1,
+    exit_on_timeout=True,
+):
     """
     Waits for a window containing the target_title_substring to become active.
 
@@ -52,14 +57,18 @@ def wait_for_window_title(target_title_substring, max_wait_seconds=30, interval_
         None: If timeout occurs and exit_on_timeout is False.
               (If exit_on_timeout is True, the script will exit instead of returning None).
     """
-    logging.info(f"Waiting for window with title containing: '{target_title_substring}'...")
+    logging.info(
+        f"Waiting for window with title containing: '{target_title_substring}'..."
+    )
     start_time = time.perf_counter()
 
     while True:
         current_title = _get_current_active_title_or_marker()
 
         if isinstance(current_title, str) and target_title_substring in current_title:
-            logging.info(f"Target window '{current_title}' (containing '{target_title_substring}') found and active.")
+            logging.info(
+                f"Target window '{current_title}' (containing '{target_title_substring}') found and active."
+            )
             return current_title  # Success
 
         elapsed_time = time.perf_counter() - start_time
@@ -69,12 +78,18 @@ def wait_for_window_title(target_title_substring, max_wait_seconds=30, interval_
             )
             if exit_on_timeout:
                 # Sanitize substring for filename
-                safe_substring = "".join(c if c.isalnum() else "_" for c in target_title_substring)
-                save_debug_screenshot_and_exit(f"Timeout_waiting_for_window_{safe_substring[:30]}") # Pass a descriptive message
+                safe_substring = "".join(
+                    c if c.isalnum() else "_" for c in target_title_substring
+                )
+                save_debug_screenshot_and_exit(
+                    f"Timeout_waiting_for_window_{safe_substring[:30]}"
+                )  # Pass a descriptive message
             return None  # Timeout
 
         # Log concisely; the contextual logger will show the current window state if any.
-        logging.info(f"Still waiting for '{target_title_substring}'. Retrying in {interval_seconds}s.")
+        logging.info(
+            f"Still waiting for '{target_title_substring}'. Retrying in {interval_seconds}s."
+        )
         time.sleep(interval_seconds)
 
 
@@ -337,12 +352,10 @@ def find_and_interact(
     return None
 
 
-if False:
+if True:
     # --- Main script execution ---
-    find_and_interact(
-        "switch-to-tablet.png", action_type=None, max_retries=float("inf")
-    )
-    time.sleep(1)  # Wait for the switch to tablet mode to complete
+    active_settings_window_title = wait_for_window_title("ThinkbookEinkPlus")
+    time.sleep(4)  # Wait for the switch to tablet mode to complete
     find_and_interact(
         "switch-to-tablet.png", action_type="click", max_retries=float("inf")
     )
@@ -359,8 +372,6 @@ if False:
     # Find and click the rotate button
     find_and_interact("rotate.png", action_type="click")
 
-logging.info("Pressing Ctrl + Windows key + 1...")
-pyautogui.hotkey("ctrl", "win", "1")
 
 # Launch High Contrast settings page
 logging.info(
@@ -373,7 +384,7 @@ subprocess.run(
 )
 
 # Wait for the Settings window to become active
-active_settings_window_title = wait_for_window_title("Settings", max_wait_seconds=30, interval_seconds=0.5)
+active_settings_window_title = wait_for_window_title("Settings")
 # If the function returns, the window was found (due to default exit_on_timeout=True).
 # The script will have exited via save_debug_screenshot_and_exit if the window wasn't found in time.
 
@@ -396,4 +407,11 @@ pyautogui.press("tab")
 time.sleep(0.1)  # Small delay between key presses if needed
 pyautogui.press("enter")
 
+active_settings_window_title = wait_for_window_title(
+    "Settings", max_wait_seconds=30, interval_seconds=0.5
+)
+
+# press alt + f4 to close the settings window
+logging.info("Pressing Alt + F4 to close the Settings window...")
+pyautogui.hotkey("alt", "f4")
 logging.info("Script completed successfully.")
