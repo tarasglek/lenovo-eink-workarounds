@@ -60,32 +60,26 @@ def get_screen_rotation_str():
         return "RotErr"  # Rotation Error during fetch
 
 
-# Helper function to get active window info string
-def get_active_window_info_str():
-    try:
-        active_window = gw.getActiveWindow()
-        if active_window:
-            title = active_window.title  # Get the full title
-            return f"Win: '{title}'"  # Use the full title in the log
-        else:
-            return "Win: None"  # No active window currently focused
-    except Exception as e:  # Catch generic exceptions from pygetwindow
-        # Print error directly to stderr to avoid logging recursion
-        print(
-            f"ERROR [get_active_window_info_str]: Error fetching active window: {e}",
-            file=sys.stderr,
-        )
-        traceback.print_exc(file=sys.stderr)  # Print traceback to stderr
-        return "WinErr"  # Active Window Error during fetch
-
 
 # Custom filter to add screen rotation and active window info to log records
 class ContextualLogFilter(logging.Filter):  # Renamed
     def filter(self, record):
         record.screen_rotation = get_screen_rotation_str()
-        record.active_window = (
-            get_active_window_info_str()
-        )  # Add new field for active window
+        
+        # Call the core title getter directly
+        title_result = _get_current_active_title_or_marker() # Assumes _get_current_active_title_or_marker is defined
+        
+        if title_result is _WINDOW_TITLE_ERROR_MARKER:
+            record.active_window_display = "WinErr"
+        elif title_result is None:
+            record.active_window_display = "Win: None"
+        else:
+            # Truncate long titles for display in logs
+            max_title_len = 60 
+            display_title = title_result
+            if len(display_title) > max_title_len:
+                display_title = display_title[:max_title_len-3] + "..."
+            record.active_window_display = f"Win: '{display_title}'"
         return True
 
 
@@ -95,7 +89,7 @@ console_handler = logging.StreamHandler(sys.stdout)
 console_handler.addFilter(ContextualLogFilter())  # Add our custom (renamed) filter
 
 # Define the new log format including screen_rotation
-log_format = "%(asctime)s [%(screen_rotation)s] [%(active_window)s] - %(levelname)s - %(message)s"
+log_format = "%(asctime)s [%(screen_rotation)s] [%(active_window_display)s] - %(levelname)s - %(message)s"
 formatter = logging.Formatter(log_format)
 console_handler.setFormatter(formatter)
 
@@ -312,38 +306,35 @@ subprocess.run(
 
 # Wait for the Settings window to become active
 logging.info("Waiting for 'Settings' window to become active...")
-settings_window_active = False
 max_wait_time_seconds = 30  # Maximum time to wait for the window
 wait_interval_seconds = 0.5  # How often to check
-elapsed_time = 0
 
-while not settings_window_active and elapsed_time < max_wait_time_seconds:
-    try:
-        active_window = gw.getActiveWindow()
-        if active_window and "Settings" in active_window.title:
-            logging.info(f"Active window is now: '{active_window.title}'. Proceeding.")
-            settings_window_active = True
-        else:
-            # Log current active window if it's not None, for debugging
-            current_title = active_window.title if active_window else "None"
-            logging.info(
-                f"Waiting... Current active window: '{current_title}'. Looking for 'Settings'."
-            )
-            time.sleep(wait_interval_seconds)
-            elapsed_time += wait_interval_seconds
-    except Exception as e:
-        logging.warning(f"Error while checking active window: {e}. Retrying...")
-        time.sleep(wait_interval_seconds)
-        elapsed_time += wait_interval_seconds
+start_loop_time = time.perf_counter()
 
-if not settings_window_active:
-    logging.error(
-        f"Settings window did not become active within {max_wait_time_seconds} seconds. Exiting."
-    )
-    # Optionally, call save_debug_screenshot_and_exit here if this is critical
-    # save_debug_screenshot_and_exit("Settings_window_timeout")
-    sys.exit(1)  # Exit if window not found
+while True:
+    title_result = _get_current_active_title_or_marker() # Assumes this helper is defined
 
+    if isinstance(title_result, str) and "Settings" in title_result:
+        logging.info("Target 'Settings' window found and active. Proceeding.")
+        break # Successfully found the window
+
+    # Check for timeout
+    if (time.perf_counter() - start_loop_time) >= max_wait_time_seconds:
+        logging.error(
+            f"'Settings' window did not become active within {max_wait_time_seconds} seconds. Timeout."
+        )
+        # Optionally, call save_debug_screenshot_and_exit here if this is critical
+        # save_debug_screenshot_and_exit("Settings_window_timeout_loop")
+        sys.exit(1) # Exit due to timeout
+
+    # If not found and not timed out, log concisely and wait
+    # The contextual logger will show the current window state.
+    logging.info(f"Still waiting for 'Settings'. Retrying in {wait_interval_seconds}s.")
+    
+    time.sleep(wait_interval_seconds)
+
+# The script continues here if the loop breaks (Settings window found)
+# The next line in your script was time.sleep(2)
 time.sleep(2)
 # Press Tab twice
 logging.info("Pressing Tab twice...")
