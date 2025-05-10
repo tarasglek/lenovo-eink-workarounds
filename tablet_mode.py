@@ -17,6 +17,8 @@
 # ///
 # add packages with uv add --script tablet_mode.py <package_name>==<version>
 # uv run tablet_mode.py
+# alternatives: https://github.com/pywinauto/pywinauto/
+# https://pypi.org/project/pyuiauto/
 import pyautogui
 import time
 import sys  # Import sys to exit if images are not found
@@ -133,26 +135,23 @@ def press_with_pause(key_or_keys, pause_seconds=0.1):
         action_description = f"key: '{key_or_keys}'"
         pyautogui.press(key_or_keys)
 
+    logging.info(f"Pressed {action_description} and pausing for {pause_seconds}s.")
     if pause_seconds > 0:
-        logging.info(f"Pressed {action_description} and pausing for {pause_seconds}s.")
         time.sleep(pause_seconds)
-    else:
-        # Log even if no pause, to indicate the action was performed by this function
-        logging.info(f"Pressed {action_description} (no explicit pause after via this function).")
 
 
 # Helper function to get screen rotation string
-def get_screen_rotation_str():
+def get_screen_rotation():
     try:
         # Get settings for the primary display
         settings = win32api.EnumDisplaySettings(None, win32con.ENUM_CURRENT_SETTINGS)
         orientation_val = settings.DisplayOrientation
 
         orientation_map = {
-            win32con.DMDO_DEFAULT: "0°",  # Landscape
-            win32con.DMDO_90: "90°",  # Portrait
-            win32con.DMDO_180: "180°",  # Landscape (flipped)
-            win32con.DMDO_270: "270°",  # Portrait (flipped)
+            win32con.DMDO_DEFAULT: 0,  # Landscape
+            win32con.DMDO_90: 90,  # Portrait
+            win32con.DMDO_180: 180,  # Landscape (flipped)
+            win32con.DMDO_270: 270,  # Portrait (flipped)
         }
         # Using short forms for brevity in logs
         return orientation_map.get(orientation_val, f"Unk({orientation_val})")
@@ -163,13 +162,13 @@ def get_screen_rotation_str():
             file=sys.stderr,
         )
         traceback.print_exc(file=sys.stderr)  # Print traceback to stderr
-        return "RotErr"  # Rotation Error during fetch
+        return -1  # Rotation Error during fetch
 
 
 # Custom filter to add screen rotation and active window info to log records
 class ContextualLogFilter(logging.Filter):  # Renamed
     def filter(self, record):
-        record.screen_rotation = get_screen_rotation_str()
+        record.screen_rotation = get_screen_rotation()
 
         # Call the core title getter directly
         title_result = (
@@ -181,12 +180,7 @@ class ContextualLogFilter(logging.Filter):  # Renamed
         elif title_result is None:
             record.active_window_display = "Win: None"
         else:
-            # Truncate long titles for display in logs
-            max_title_len = 60
-            display_title = title_result
-            if len(display_title) > max_title_len:
-                display_title = display_title[: max_title_len - 3] + "..."
-            record.active_window_display = f"Win: '{display_title}'"
+            record.active_window_display = f"Win: '{title_result}'"
         return True
 
 
@@ -196,7 +190,7 @@ console_handler = logging.StreamHandler(sys.stdout)
 console_handler.addFilter(ContextualLogFilter())  # Add our custom (renamed) filter
 
 # Define the new log format including screen_rotation
-log_format = "%(asctime)s [%(screen_rotation)s] [%(active_window_display)s] - %(levelname)s - %(message)s"
+log_format = "%(asctime)s [%(screen_rotation)d] [%(active_window_display)s] - %(levelname)s - %(message)s"
 formatter = logging.Formatter(log_format)
 console_handler.setFormatter(formatter)
 
@@ -234,7 +228,11 @@ def save_debug_screenshot_and_exit(failed_image_path):
 
 
 def find_and_interact(
-    image_path, action_type="click", max_retries=3, wait_to_disappear=False
+    image_path,
+    action_type="click",
+    max_retries=3,
+    wait_to_disappear=False,
+    exit_on_timeout=True,
 ):
     """
     Finds an image on screen, performs an action, retries if not found,
@@ -343,14 +341,6 @@ def find_and_interact(
 
                 return initial_location  # Success, return initial_location and exit function
 
-            else:
-                # locateCenterOnScreen raises ImageNotFoundException if None,
-                # but added for robustness in case behavior changes.
-                # Explicitly raise to be caught by the except block below.
-                raise pyautogui.ImageNotFoundException(
-                    f"locateCenterOnScreen returned None for {image_path}"
-                )
-
         except pyautogui.ImageNotFoundException:
             attempt += 1
             # Check if we have exceeded retries, but only if max_retries is not infinite
@@ -358,9 +348,9 @@ def find_and_interact(
                 logging.error(
                     f"Attempt {attempt}/{max_retries}: {image_path} not found. Max retries reached."
                 )
-                # Last attempt failed, call the failure handler
-                save_debug_screenshot_and_exit(image_path)
-                # The line below won't be reached as the helper function exits
+                if exit_on_timeout:
+                    # Last attempt failed, call the failure handler
+                    save_debug_screenshot_and_exit(image_path)
                 return None  # Indicate failure if helper didn't exit
 
             logging.info(
@@ -384,17 +374,17 @@ if True:
         "switch-to-tablet.png", action_type="click", max_retries=float("inf")
     )
 
+    # if screen orientation != 90
+    if get_screen_rotation() != 90:
+        logging.info("Screen rotation is not 90 degrees. Attempting to rotate...")
+        # Find and right-click the logo
+        find_and_interact("lenovo.logo.png", action_type="right_click")
+
+        time.sleep(1)
+        # Find and click the relevant rotate button
+        find_and_interact("rotate.png", action_type="click")
+
     find_and_interact("windows-logo.png", action_type="click", wait_to_disappear=True)
-
-    # Find and right-click the logo
-    find_and_interact("lenovo.logo.png", action_type="right_click")
-
-    # Wait
-    logging.info("Waiting for 1 second...")
-    time.sleep(1)
-
-    # Find and click the rotate button
-    find_and_interact("rotate.png", action_type="click")
 
 
 # Launch High Contrast settings page
@@ -416,17 +406,15 @@ active_settings_window_title = wait_for_window_title("Settings")
 # The next line in your script was time.sleep(2)
 time.sleep(4)
 # Press Tab twice
-logging.info("Pressing Tab twice...")
+logging.info("Starting to select eink theme...Pressing Tab twice...")
 press_with_pause("tab", pause_seconds=0.1)  # First tab with pause
-pyautogui.press("tab")                     # Second tab (original had no sleep after this specific press)
-# press down 6 times (loop iterates 6 times)
-logging.info("Pressing Down 6 times...") # Adjusted comment to match loop
-for _ in range(6):
+pyautogui.press("tab")  # Second tab (original had no sleep after this specific press)
+for _ in range(5):
     press_with_pause("down", pause_seconds=0.1)
 # tab, then enter
 logging.info("Pressing Tab, then Enter...")
 press_with_pause("tab", pause_seconds=0.1)  # Tab with pause
-pyautogui.press("enter")                   # Enter (original had no sleep after this specific press)
+pyautogui.press("enter")  # Enter (original had no sleep after this specific press)
 
 active_settings_window_title = wait_for_window_title(
     "Settings", max_wait_seconds=30, interval_seconds=0.5
